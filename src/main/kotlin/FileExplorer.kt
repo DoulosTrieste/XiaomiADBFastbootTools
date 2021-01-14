@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
 
-class FileExplorer(val statusTextField: TextField, val statusProgressBar: ProgressBar) {
+class FileExplorer(private val statusTextField: TextField, private val statusProgressBar: ProgressBar) {
 
     var path = "/"
 

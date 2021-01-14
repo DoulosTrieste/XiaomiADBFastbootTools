@@ -30,13 +30,13 @@ fun MutableMap<String, MutableList<String>>.add(key: String, value: String) {
     } else this[key]!!.add(value)
 }
 
-fun startProcess(vararg command: String, redirectErrorStream: Boolean = false) =
+fun startProcess(vararg command: String, redirectErrorStream: Boolean = false): Process =
     ProcessBuilder(*command).directory(XiaomiADBFastbootTools.dir).redirectErrorStream(redirectErrorStream).start()
 
-fun startProcess(command: List<String?>, redirectErrorStream: Boolean = false) =
+fun startProcess(command: List<String?>, redirectErrorStream: Boolean = false): Process =
     ProcessBuilder(command).directory(XiaomiADBFastbootTools.dir).redirectErrorStream(redirectErrorStream).start()
 
-fun runScript(file: File, redirectErrorStream: Boolean = false) = if (XiaomiADBFastbootTools.win)
+fun runScript(file: File, redirectErrorStream: Boolean = false): Process = if (XiaomiADBFastbootTools.win)
     ProcessBuilder("cmd.exe", "/c", file.absolutePath).directory(XiaomiADBFastbootTools.dir)
         .redirectErrorStream(redirectErrorStream).start()
 else ProcessBuilder("sh", "-c", file.absolutePath).directory(XiaomiADBFastbootTools.dir)

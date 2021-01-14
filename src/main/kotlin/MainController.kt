@@ -13,6 +13,7 @@ import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.cell.CheckBoxTableCell
 import javafx.scene.control.cell.PropertyValueFactory
 import javafx.scene.image.ImageView
+import javafx.scene.input.KeyCode
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.scene.text.Font
@@ -299,7 +300,6 @@ class MainController : Initializable {
                 }
                 else -> {
                     infoTextArea.clear()
-                    codenameTextField.clear()
                     dpiTextField.clear()
                     widthTextField.clear()
                     heightTextField.clear()
@@ -344,11 +344,12 @@ class MainController : Initializable {
                     Mode.ADB_ERROR -> {
                         if ("loaded" !in outputTextArea.text)
                             outputTextArea.text =
-                                "ERROR: The device cannot be loaded!\nTry setting the USB configuration to data transfer!\n\n"
+                                "ERROR: The device cannot be loaded!\nTry setting the USB configuration to data transfer or launching the application with root/admin privileges!\n\n"
                     }
                     Mode.FASTBOOT_ERROR -> {
                         if ("loaded" !in outputTextArea.text)
-                            outputTextArea.text = "ERROR: The device cannot be loaded!\n\n"
+                            outputTextArea.text =
+                                "ERROR: The device cannot be loaded!\nTry launching the application with root/admin privileges!\n\n"
                     }
                     else -> {
                     }
@@ -357,6 +358,17 @@ class MainController : Initializable {
             setUI()
             delay(1000)
         } while (!(Device.mode == Mode.ADB || Device.mode == Mode.FASTBOOT || Device.mode == Mode.RECOVERY))
+    }
+
+    private fun TableView<App>.setKeyListener() {
+        this.setOnKeyPressed {
+            if (it.code == KeyCode.ENTER || it.code == KeyCode.SPACE)
+                this.selectionModel.selectedItems.forEach { app ->
+                    app.apply {
+                        selectedProperty().set(!selectedProperty().get())
+                    }
+                }
+        }
     }
 
     override fun initialize(url: URL, rb: ResourceBundle?) {
@@ -399,6 +411,11 @@ class MainController : Initializable {
         reinstallerTableView.columns.setAll(recheckTableColumn, reappTableColumn, repackageTableColumn)
         disablerTableView.columns.setAll(discheckTableColumn, disappTableColumn, dispackageTableColumn)
         enablerTableView.columns.setAll(encheckTableColumn, enappTableColumn, enpackageTableColumn)
+
+        uninstallerTableView.setKeyListener()
+        reinstallerTableView.setKeyListener()
+        disablerTableView.setKeyListener()
+        enablerTableView.setKeyListener()
 
         Command.outputTextArea = outputTextArea
         Command.progressIndicator = progressIndicator
@@ -921,7 +938,9 @@ class MainController : Initializable {
         GlobalScope.launch {
             if (Device.checkFastboot()) {
                 if (confirm("Your partitions must be intact in order to successfully lock the bootloader.")) {
-                    Command.execDisplayed(mutableListOf("fastboot", "oem", "lock"))
+                    if (confirm("All your data will be gone.")) {
+                        Command.execDisplayed(mutableListOf("fastboot", "oem", "lock"))
+                    }
                 }
             } else checkDevice()
         }
@@ -930,8 +949,11 @@ class MainController : Initializable {
     @FXML
     private fun unlockButtonPressed(event: ActionEvent) {
         GlobalScope.launch {
-            if (Device.checkFastboot())
-                Command.execDisplayed(mutableListOf("fastboot", "oem", "unlock")) else checkDevice()
+            if (Device.checkFastboot()) {
+                if (confirm("All your data will be gone.")) {
+                    Command.execDisplayed(mutableListOf("fastboot", "oem", "unlock"))
+                }
+            } else checkDevice()
         }
     }
 
@@ -1204,28 +1226,30 @@ class MainController : Initializable {
             graphic = ImageView("icon.png")
             headerText =
                 "Xiaomi ADB/Fastboot Tools\nVersion ${XiaomiADBFastbootTools.version}\nCreated by Szaki\n\n" +
-                        "SDK Platform Tools\n${runBlocking {
-                            Command.exec(
-                                mutableListOf(
-                                    "adb",
-                                    "--version"
-                                )
-                            ).lines()[1]
-                        }}"
+                        "SDK Platform Tools\n${
+                            runBlocking {
+                                Command.exec(
+                                    mutableListOf(
+                                        "adb",
+                                        "--version"
+                                    )
+                                ).lines()[1]
+                            }
+                        }"
             val vb = VBox()
             vb.alignment = Pos.CENTER
             val discord = Hyperlink("Xiaomi Community on Discord")
             discord.onAction = EventHandler {
                 if (XiaomiADBFastbootTools.linux)
-                    Runtime.getRuntime().exec("xdg-open https://discord.gg/xiaomi")
-                else Desktop.getDesktop().browse(URI("https://discord.gg/xiaomi"))
+                    Runtime.getRuntime().exec("xdg-open http://discord.szaki.io/")
+                else Desktop.getDesktop().browse(URI("http://discord.szaki.io/"))
             }
             discord.font = Font(15.0)
             val twitter = Hyperlink("Szaki on Twitter")
             twitter.onAction = EventHandler {
                 if (XiaomiADBFastbootTools.linux)
-                    Runtime.getRuntime().exec("xdg-open https://twitter.com/Szaki_EU")
-                else Desktop.getDesktop().browse(URI("https://twitter.com/Szaki_EU"))
+                    Runtime.getRuntime().exec("xdg-open http://twitter.szaki.io/")
+                else Desktop.getDesktop().browse(URI("http://twitter.szaki.io/"))
             }
             twitter.font = Font(15.0)
             val github = Hyperlink("Repository on GitHub")
